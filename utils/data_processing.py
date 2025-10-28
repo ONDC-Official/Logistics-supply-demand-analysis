@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 import h3
-from config import base_dir 
+
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_logistics_data(csv_path):
     """Load and process logistics data"""
