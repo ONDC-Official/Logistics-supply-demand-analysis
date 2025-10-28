@@ -1,5 +1,7 @@
+import os
 import pandas as pd
 import h3
+from config import base_dir 
 
 def load_logistics_data(csv_path):
     """Load and process logistics data"""
@@ -12,8 +14,6 @@ def load_logistics_data(csv_path):
         
         df['Hour'] = df['Timestamp'].dt.hour
         df['Date'] = df['Timestamp'].dt.date
-        
-        # Create hour bins (00-01, 01-02, etc.)
         df['Hour_Bin'] = df['Hour'].apply(lambda x: f"{x:02d}-{(x+1):02d}")
         
         df['Restaurant Latitude'] = pd.to_numeric(df['Restaurant Latitude'], errors='coerce')
@@ -28,10 +28,12 @@ def load_logistics_data(csv_path):
             ),
             axis=1
         )
-        df.to_csv("data_with_h3.csv", index=False)
+        output_path = os.path.join(base_dir, 'datasets', 'data_with_h3.csv')
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        df.to_csv(output_path, index=False)
         
-        print(f"✅ Loaded {len(df)} valid logistics records")
+        print(f"Loaded {len(df)} valid logistics records")
         return df
     except Exception as e:
-        print(f"❌ Error loading CSV: {e}")
+        print(f"Error loading CSV: {e}")
         return None
