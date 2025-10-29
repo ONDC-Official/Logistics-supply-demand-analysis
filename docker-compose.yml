@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ${CONTAINER_NAME}
+    container_name: logistics-supply-demand-analysis
     ports:
       - "${FLASK_RUN_PORT}:8080"
     env_file:
