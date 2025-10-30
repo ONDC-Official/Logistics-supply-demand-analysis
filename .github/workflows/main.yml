@@ -63,7 +63,7 @@ jobs:
 
           
           echo "MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }}" >> \$REPO_DIR/.env
-          echo "MONGO_URI=${{vars.MONGO_URI}}" >> \$REPO_DIR/.env
+          echo "MONGO_URI=${{secrets.MONGO_URI}}" >> \$REPO_DIR/.env
           echo "MONGO_COLLECTION_NAME=${{ vars.MONGO_COLLECTION_NAME }}" >> \$REPO_DIR/.env
 
           # Ingestion Configuration
