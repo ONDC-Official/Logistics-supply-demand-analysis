@@ -197,6 +197,7 @@
     </div>
     
     <script>
+        const BASE_URL = "{{ base_url }}";
         var map = L.map('map').setView([28.5355, 77.2200], 12);
         
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -303,7 +304,7 @@
             var startTime = performance.now();
             
             // Make API call
-            fetch('/filter_hexagons', {
+            fetch(`${BASE_URL}/filter_hexagons`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
