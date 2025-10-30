@@ -69,7 +69,7 @@ jobs:
           # Ingestion Configuration
           echo "CHUNK_SIZE=100000" >> \$REPO_DIR/.env
           echo "BATCH_SIZE=10000" >> \$REPO_DIR/.env
-          echo "MAX_CHUNKS=55" >> \$REPO_DIR/.env
+          echo "MAX_CHUNKS=22" >> \$REPO_DIR/.env
           echo "MIN_RECORDS_FOR_SKIP=200000" >> \$REPO_DIR/.env
           
           # H3 Configuration
