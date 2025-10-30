@@ -21,14 +21,12 @@
             height: 45px;
             background: #f7f7f7;
             border-bottom: 1px solid #ddd;
-            box-shadow: none;
             z-index: 10000;
             display: flex;
             align-items: center;
             padding: 0 15px;
             gap: 15px;
         }
-
         
         .filter-group {
             display: flex;
@@ -39,6 +37,7 @@
         .filter-label {
             color: #333;
             font-weight: 500;
+            font-size: 13px;
         }
         
         .filter-select {
@@ -57,10 +56,6 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         
-        .filter-select:focus {
-            outline: 2px solid #ffd700;
-        }
-        
         .gps-input {
             padding: 8px 12px;
             border: none;
@@ -68,10 +63,6 @@
             font-size: 14px;
             width: 200px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .gps-input::placeholder {
-            color: #999;
         }
         
         .apply-btn {
@@ -111,14 +102,12 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Legend */
         .legend {
             position: fixed;
             bottom: 10px;
             left: 10px;
             width: 150px;
             background-color: white;
-            border: none;
             z-index: 9999;
             font-size: 11px;
             padding: 5px;
@@ -136,17 +125,9 @@
             margin: 5px 0;
         }
         
-        /* Leaflet controls adjustment */
-        .leaflet-control-layers,
-        .leaflet-control-zoom {
-            z-index: 1000 !important;
-            margin-top: 10px !important;
-        }
-        
-        /* Status message */
         .status-message {
             position: fixed;
-            top: 70px;
+            top: 55px;
             right: 20px;
             background: white;
             padding: 12px 20px;
@@ -168,7 +149,6 @@
     </style>
 </head>
 <body>
-    <!-- Top Filter Bar -->
     <div class="top-filter-bar">
         <div class="filter-group">
             <label class="filter-label">Filter by Logistics Player:</label>
@@ -199,14 +179,13 @@
     </div>
     
     <div id="status-message" class="status-message"></div>
-    
     <div id="map"></div>
     
     <div class="legend">
-        <p class="legend-title">Logistics Heatmap</p>
-        <p><strong>Total Orders:</strong> {{ total_orders }}</p>
-        <p><strong>Total Restaurants:</strong> {{ total_restaurants }}</p>
-        <p><strong>Success Rate:</strong> {{ success_rate }}%</p>
+        <p class="legend-title">🚚 Logistics Heatmap</p>
+        <p><strong>Total Orders:</strong> <span id="total-orders">{{ total_orders }}</span></p>
+        <p><strong>Total Restaurants:</strong> <span id="total-restaurants">{{ total_restaurants }}</span></p>
+        <p><strong>Success Rate:</strong> <span id="success-rate">{{ success_rate }}</span>%</p>
         <p><strong>Active Hexagons:</strong> <span id="hexagon-count">{{ hexagon_count }}</span></p>
         <hr style="margin: 10px 0; border: none; border-top: 1px solid #e5e7eb;">
         <p style="font-weight: bold; margin-bottom: 5px;">Success Rate Colors:</p>
@@ -230,7 +209,9 @@
         var hexagonLayer = null;
         var markerClusterGroup = null;
         var gpsMarker = null;
-
+        var layerControl = null;
+        
+        // Add pincode boundaries
         var pincodeData = {{ pincode_data | tojson }};
         if (pincodeData && pincodeData.features && pincodeData.features.length > 0) {
             pincodeLayer = L.geoJSON(pincodeData, {
@@ -254,42 +235,17 @@
             }).addTo(map);
         }
         
-        var initialData = {{ initial_hexagons | tojson }};
-        renderHexagons(initialData);
+        // Initial data
+        renderHexagons({{ initial_hexagons | tojson }});
+        renderSupplyPoints({{ initial_supply_points | tojson }});
         
-        var supplyPoints = {{ supply_points | tojson }};
-        markerClusterGroup = L.markerClusterGroup({
-            maxClusterRadius: 20,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            zoomToBoundsOnClick: true
-        });
-        
-        supplyPoints.forEach(function(point) {
-            var marker = L.circleMarker([point[0], point[1]], {
-                radius: 3,
-                color: '#27ae60',
-                fillColor: '#2ecc71',
-                fillOpacity: 0.7,
-                weight: 1,
-                pane: 'markerPane'
-            });
-            marker.bindPopup('Restaurant: ' + point[0].toFixed(6) + ', ' + point[1].toFixed(6));
-            markerClusterGroup.addLayer(marker);
-        });
-        
-        map.addLayer(markerClusterGroup);
-        
-        var baseMaps = {};
-        var overlayMaps = {};
-        var layerControl = null;
-        
+        // Initialize layer control ONCE
         function initLayerControl() {
             if (layerControl) {
                 map.removeControl(layerControl);
             }
             
-            overlayMaps = {
+            var overlayMaps = {
                 "H3 Hexagons (Success Rate)": hexagonLayer,
                 "Supply Points (Restaurants)": markerClusterGroup
             };
@@ -298,7 +254,7 @@
                 overlayMaps["Pincode Boundaries"] = pincodeLayer;
             }
             
-            layerControl = L.control.layers(baseMaps, overlayMaps, {
+            layerControl = L.control.layers({}, overlayMaps, {
                 collapsed: false,
                 position: 'topright'
             });
@@ -308,6 +264,7 @@
         
         initLayerControl();
         
+        // Filter functionality
         document.getElementById('apply-filter').addEventListener('click', applyFilter);
         
         function applyFilter() {
@@ -317,7 +274,8 @@
             var logisticsPlayer = document.getElementById('logistics-player-filter').value;
             var hourBin = document.getElementById('hour-bin-filter').value;
             var gpsInput = document.getElementById('gps-input').value.trim();
-
+            
+            // Handle GPS input
             if (gpsInput) {
                 var coords = gpsInput.split(',').map(c => parseFloat(c.trim()));
                 if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
@@ -342,6 +300,9 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Filtering...';
             
+            var startTime = performance.now();
+            
+            // Make API call
             fetch('/filter_hexagons', {
                 method: 'POST',
                 headers: {
@@ -354,21 +315,33 @@
             })
             .then(response => response.json())
             .then(data => {
-                renderHexagons(data.hexagons);
+                var endTime = performance.now();
+                var queryTime = Math.round(endTime - startTime);
                 
+                // Update layers (this will replace existing layers)
+                renderHexagons(data.hexagons);
+                renderSupplyPoints(data.supply_points);
+                
+                // Update statistics
+                document.getElementById('total-orders').textContent = data.stats.total_orders.toLocaleString();
+                document.getElementById('success-rate').textContent = data.stats.success_rate;
+                document.getElementById('total-restaurants').textContent = data.stats.total_restaurants.toLocaleString();
+                document.getElementById('hexagon-count').textContent = data.hexagons.features.length.toLocaleString();
+                
+                // Show status
                 statusDiv.className = 'status-message success';
                 statusDiv.style.display = 'block';
-                statusDiv.innerHTML = 'Showing ' + data.hexagons.features.length + ' hexagons<br>' +
-                                    'Orders: ' + data.stats.total_orders + ' | Success Rate: ' + data.stats.success_rate + '%';
+                statusDiv.innerHTML = '✅ Showing ' + data.hexagons.features.length.toLocaleString() + ' hexagons<br>' +
+                                    'Orders: ' + data.stats.total_orders.toLocaleString() + ' | Success Rate: ' + data.stats.success_rate + '%<br>' +
+                                    'Query time: ' + queryTime + 'ms';
                 
                 setTimeout(() => {
                     statusDiv.style.display = 'none';
-                }, 3000);
+                }, 4000);
                 
-                document.getElementById('hexagon-count').textContent = data.hexagons.features.length;
-                
+                // Reinitialize layer control to update references
                 initLayerControl();
-
+                
                 btn.disabled = false;
                 btn.innerHTML = 'Apply Filters';
             })
@@ -376,7 +349,7 @@
                 console.error('Error:', error);
                 statusDiv.className = 'status-message error';
                 statusDiv.style.display = 'block';
-                statusDiv.innerHTML = 'Error applying filters';
+                statusDiv.innerHTML = '❌ Error applying filters';
                 
                 setTimeout(() => {
                     statusDiv.style.display = 'none';
@@ -388,10 +361,12 @@
         }
         
         function renderHexagons(geojson) {
+            // Remove existing hexagon layer
             if (hexagonLayer) {
                 map.removeLayer(hexagonLayer);
             }
             
+            // Create new hexagon layer
             hexagonLayer = L.geoJSON(geojson, {
                 style: function(feature) {
                     return {
@@ -406,16 +381,48 @@
                     var props = feature.properties;
                     layer.bindTooltip(
                         '<b>H3 Index:</b> ' + props.h3_index + '<br>' +
-                        '<b>Total Orders:</b> ' + props.total_orders + '<br>' +
-                        '<b>Success:</b> ' + props.success_orders + '<br>' +
-                        '<b>Failed:</b> ' + props.fail_orders + '<br>' +
+                        '<b>Total Orders:</b> ' + props.total_orders.toLocaleString() + '<br>' +
+                        '<b>Success:</b> ' + props.success_orders.toLocaleString() + '<br>' +
+                        '<b>Failed:</b> ' + props.fail_orders.toLocaleString() + '<br>' +
                         '<b>Success Rate:</b> ' + props.success_rate + '%<br>' +
-                        '<b>Restaurants:</b> ' + props.unique_restaurants,
+                        '<b>Restaurants:</b> ' + props.unique_restaurants + '<br>',
                         { className: 'custom-tooltip' }
                     );
                 },
                 pane: 'overlayPane'
             }).addTo(map);
+        }
+        
+        function renderSupplyPoints(points) {
+            // Remove existing supply points layer
+            if (markerClusterGroup) {
+                map.removeLayer(markerClusterGroup);
+            }
+            
+            // Create new marker cluster group
+            markerClusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 20,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true
+            });
+            
+            // Add markers
+            points.forEach(function(point) {
+                var marker = L.circleMarker([point[0], point[1]], {
+                    radius: 3,
+                    color: '#27ae60',
+                    fillColor: '#2ecc71',
+                    fillOpacity: 0.7,
+                    weight: 1,
+                    pane: 'markerPane'
+                });
+                marker.bindPopup('Restaurant: ' + point[0].toFixed(6) + ', ' + point[1].toFixed(6));
+                markerClusterGroup.addLayer(marker);
+            });
+            
+            // Add to map
+            map.addLayer(markerClusterGroup);
         }
         
         function getColor(success_rate) {
