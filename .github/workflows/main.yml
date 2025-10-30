@@ -57,8 +57,11 @@ jobs:
           echo "GEOJSON_FILE=${{ vars.GEOJSON_FILE }}" >> \$REPO_DIR/.env
           echo "CSV_FILE_PATH=${{vars.CSV_FILE_PATH}}" >> \$REPO_DIR/.env
           echo "GEOJSON_FILE_PATH=${{vars.GEOJSON_FILE}}" >> \$REPO_DIR/.env
-          
 
+          echo "BASE_PATH=${{vars.BASE_PATH}}" >> \$REPO_DIR/.env
+          echo "BASE_URL=${{vars.BASE_URL}}" >> \$REPO_DIR/.env
+
+          
           echo "MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }}" >> \$REPO_DIR/.env
           echo "MONGO_URI=${{vars.MONGO_URI}}" >> \$REPO_DIR/.env
           echo "MONGO_COLLECTION_NAME=${{ vars.MONGO_COLLECTION_NAME }}" >> \$REPO_DIR/.env
