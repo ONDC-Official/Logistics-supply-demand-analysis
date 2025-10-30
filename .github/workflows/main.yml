@@ -55,6 +55,32 @@ jobs:
           echo "FLASK_RUN_HOST=0.0.0.0" >> \$REPO_DIR/.env
           echo "FLASK_RUN_PORT=${{ vars.FLASK_RUN_PORT }}" >> \$REPO_DIR/.env
           echo "GEOJSON_FILE=${{ vars.GEOJSON_FILE }}" >> \$REPO_DIR/.env
+          echo "CSV_FILE_PATH=${{vars.CSV_FILE_PATH}}" >> \$REPO_DIR/.env
+          echo "GEOJSON_FILE_PATH=${{vars.GEOJSON_FILE}}" >> \$REPO_DIR/.env
+          
+
+          echo "MONGO_DB_NAME=${{ vars.MONGO_DB_NAME }}" >> \$REPO_DIR/.env
+          echo "MONGO_URI=${{vars.MONGO_URI}}" >> \$REPO_DIR/.env
+          echo "MONGO_COLLECTION_NAME=${{ vars.MONGO_COLLECTION_NAME }}" >> \$REPO_DIR/.env
+
+          # Ingestion Configuration
+          echo "CHUNK_SIZE=100000" >> \$REPO_DIR/.env
+          echo "BATCH_SIZE=10000" >> \$REPO_DIR/.env
+          echo "MAX_CHUNKS=55" >> \$REPO_DIR/.env
+          echo "MIN_RECORDS_FOR_SKIP=200000" >> \$REPO_DIR/.env
+          
+          # H3 Configuration
+          echo "H3_RESOLUTIONS=6,7,8,9,10" >> \$REPO_DIR/.env
+          echo "DEFAULT_H3_RESOLUTION=8" >> \$REPO_DIR/.env
+          
+          # API Configuration
+          echo "DEFAULT_HEXAGON_LIMIT=3000" >> \$REPO_DIR/.env
+          echo "DEFAULT_SUPPLY_POINT_LIMIT=3000" >> \$REPO_DIR/.env
+          
+          # Gunicorn Configuration (for production)
+          echo "GUNICORN_WORKERS=4" >> \$REPO_DIR/.env
+          echo "GUNICORN_THREADS=2" >> \$REPO_DIR/.env
+          echo "GUNICORN_TIMEOUT=120" >> \$REPO_DIR/.env
           EOF
 
       - name: Verify .env and docker-compose.yml files
