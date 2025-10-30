@@ -163,6 +163,10 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
     results = list(collection.aggregate(pipeline))
     return [[r['lat'], r['lon']] for r in results]
 
+@app.context_processor
+def inject_base_vars():
+    return dict(base_path=Config.BASE_PATH, base_url=Config.BASE_URL)
+
 @app.route('/')
 def index():
     """Main visualization page"""
@@ -185,7 +189,7 @@ def index():
         hour_bins=hour_bins
     )
 
-@app.route('/filter_hexagons', methods=['POST'])
+@app.route(f"{Config.BASE_PATH}/filter_hexagons", methods=['POST'])
 def filter_hexagons():
     """API endpoint to filter hexagons - Returns FILTERED metrics"""
     try:

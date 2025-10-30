@@ -36,3 +36,6 @@ class Config:
     GUNICORN_WORKERS = int(os.getenv('GUNICORN_WORKERS', 4))
     GUNICORN_THREADS = int(os.getenv('GUNICORN_THREADS', 2))
     GUNICORN_TIMEOUT = int(os.getenv('GUNICORN_TIMEOUT', 120))
+
+    BASE_PATH = os.getenv('BASE_PATH', '')
+    BASE_URL = os.getenv('BASE_URL', '')
