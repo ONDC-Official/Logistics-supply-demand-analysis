@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logistics-supply-demand-analysis
+    ports:
+      - "${FLASK_RUN_PORT}:8080"
+    env_file:
+      - .env
+    restart: always
