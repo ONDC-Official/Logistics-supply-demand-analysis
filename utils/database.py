@@ -1,14 +1,15 @@
 """
 Database utilities for MongoDB operations
 """
-
+import logging
+from .redis_cache import get_cache, set_cache
 from pymongo import MongoClient
 from config import Config
 
 _client = None
 _db = None
 _collection = None
-
+logger = logging.getLogger(__name__)
 def get_db_collection():
     """Get MongoDB collection (singleton pattern)"""
     global _client, _db, _collection
@@ -22,6 +23,17 @@ def get_db_collection():
 
 def get_statistics(logistics_player='All', hour_bin='All'):
     """Get statistics with filters"""
+    cache_key = f"stats:{logistics_player}:{hour_bin}"
+    
+    # 1️⃣ Try fetching from cache first
+    cached = get_cache(cache_key)
+    if cached:
+        logger.info(f"✅ Cache hit for key: {cache_key}")
+        return cached
+    else:
+        logger.info(f"❌ Cache miss for key: {cache_key} — querying MongoDB")
+
+    
     collection = get_db_collection()
     
     pipeline = []
@@ -34,6 +46,9 @@ def get_statistics(logistics_player='All', hour_bin='All'):
     
     if match_conditions:
         pipeline.append({'$match': match_conditions})
+        logger.info(f"Applying match conditions: {match_conditions}")
+    else:
+        logger.info("No match conditions applied — querying all data")
     
     pipeline.append({
         '$group': {
@@ -72,14 +87,19 @@ def get_statistics(logistics_player='All', hour_bin='All'):
     
     if results:
         result = results[0]
-        return {
+        final = {
             'total_orders': result['total_orders'],
             'successful_orders': result['successful_orders'],
             'success_rate': round(result['success_rate'], 1),
             'total_restaurants': result['total_restaurants']
         }
+    else:
+        final = {'total_orders': 0, 'successful_orders': 0, 'success_rate': 0, 'total_restaurants': 0}
     
-    return {'total_orders': 0, 'successful_orders': 0, 'success_rate': 0, 'total_restaurants': 0}
+    set_cache(cache_key, final, Config.CACHE_EXPIRY_SECONDS)
+    logger.info(f"Cached result for key: {cache_key}")
+    
+    return final
 
 def get_filters():
     """Get unique filter values"""

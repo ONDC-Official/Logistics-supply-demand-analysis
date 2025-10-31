@@ -39,3 +39,6 @@ class Config:
 
     BASE_PATH = os.getenv('BASE_PATH', '')
     BASE_URL = os.getenv('BASE_URL', '')
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    CACHE_EXPIRY_SECONDS = int(os.getenv('CACHE_EXPIRY_SECONDS', 3600))

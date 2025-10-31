@@ -41,7 +41,7 @@ def initialize_app():
             logger.warning("No data found in MongoDB! Run the data ingestion script first: python scripts/ingest_data.py")
 
         stats = get_statistics()
-        logger.info(f"Quick Stats: Orders={stats['total_orders']:,}, Success Rate={stats['success_rate']}%, Unique Restaurants={stats['total_restaurants']:,}")
+        logger.info(f"Quick Stats Cached: Orders={stats['total_orders']:,}, Success Rate={stats['success_rate']}%, Unique Restaurants={stats['total_restaurants']:,}")
 
         indexes = collection.index_information()
         logger.info(f"Indexes configured: {len(indexes)}")
