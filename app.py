@@ -2,7 +2,8 @@
 Flask App with MongoDB - Fast Filtered Aggregation
 All metrics update correctly based on filters
 """
-
+import logging
+import sys
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import h3
@@ -10,11 +11,52 @@ import h3
 from config import Config
 from utils.database import get_db_collection, get_statistics, get_filters
 from utils.geojson_loader import load_pincode_geojson
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
+logger = logging.getLogger(__name__)
+logger.info("Logger initialized successfully")
 app = Flask(__name__)
 CORS(app)
-
 pincode_geojson = None
+
+def initialize_app():
+    """Initialize MongoDB connection, statistics, and GeoJSON on startup"""
+    global pincode_geojson
+
+    logger.info("=" * 80)
+    logger.info("Initializing Logistics Supply-Demand Visualization App")
+
+    try:
+        logger.info("Connecting to MongoDB...")
+        collection = get_db_collection()
+        doc_count = collection.count_documents({})
+
+        logger.info(f"MongoDB Connected — DB: {Config.MONGO_DB_NAME} | Collection: {Config.MONGO_COLLECTION_NAME} | Docs: {doc_count:,}")
+
+        if doc_count == 0:
+            logger.warning("No data found in MongoDB! Run the data ingestion script first: python scripts/ingest_data.py")
+
+        stats = get_statistics()
+        logger.info(f"Quick Stats: Orders={stats['total_orders']:,}, Success Rate={stats['success_rate']}%, Unique Restaurants={stats['total_restaurants']:,}")
+
+        indexes = collection.index_information()
+        logger.info(f"Indexes configured: {len(indexes)}")
+
+        logger.info("Loading pincode GeoJSON boundaries...")
+        pincode_geojson = load_pincode_geojson()
+        if pincode_geojson:
+            logger.info(f"Loaded {len(pincode_geojson['features'])} pincode boundaries.")
+        else:
+            logger.warning("Failed to load GeoJSON — file missing or unreadable.")
+
+        logger.info("Initialization complete")
+
+    except Exception as e:
+        logger.exception(f"Initialization failed: {e}")
 
 def get_hexagons_with_filters(logistics_player='All', hour_bin='All', limit=None):
     """
@@ -167,6 +209,8 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
 def inject_base_vars():
     return dict(base_path=Config.BASE_PATH, base_url=Config.BASE_URL)
 
+initialize_app()
+
 @app.route('/')
 def index():
     """Main visualization page"""
@@ -230,42 +274,4 @@ def health():
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    print("=" * 80)
-    print("LOGISTICS SUPPLY-DEMAND VISUALIZATION")
-    
-    try:
-        collection = get_db_collection()
-        doc_count = collection.count_documents({})
-        
-        print(f"\nMongoDB Connected")
-        print(f"Database: {Config.MONGO_DB_NAME}")
-        print(f"Collection: {Config.MONGO_COLLECTION_NAME} ({doc_count:,} documents)")
-        
-        if doc_count == 0:
-            print("\nWARNING: No data found in MongoDB!")
-            print("Please run the data ingestion script first:")
-            print("python scripts/ingest_data.py")
-            print("Exiting...")
-            exit(1)
-        
-        stats = get_statistics()
-        print(f"\nQUICK STATS:")
-        print(f"   Total Orders: {stats['total_orders']:,}")
-        print(f"   Success Rate: {stats['success_rate']}%")
-        print(f"   Unique Restaurants: {stats['total_restaurants']:,}")
-        
-        indexes = collection.index_information()
-        print(f"\n🔍 Indexes: {len(indexes)} configured")
-        
-        print(f"\n📍 Loading pincode boundaries...")
-        pincode_geojson = load_pincode_geojson()
-        
-    except Exception as e:
-        print(f"\nMongoDB Connection Error: {e}")
-        print("\nMake sure MongoDB is running:")
-        print("   mongod --dbpath /path/to/data")
-        exit(1)
-    
-    print("\n" + "=" * 80)
-    print("SERVER READY!")    
     app.run(host=Config.FLASK_HOST, port=Config.FLASK_PORT, debug=(Config.FLASK_ENV == 'development'))
