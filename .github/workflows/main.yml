@@ -84,6 +84,11 @@ jobs:
           echo "GUNICORN_WORKERS=4" >> \$REPO_DIR/.env
           echo "GUNICORN_THREADS=2" >> \$REPO_DIR/.env
           echo "GUNICORN_TIMEOUT=120" >> \$REPO_DIR/.env
+
+
+          echo "REDIS_HOST=${{vars.REDIS_HOST}}" >> \$REPO_DIR/.env
+          echo "REDIS_PORT=${{vars.REDIS_PORT}}" >> \$REPO_DIR/.env
+          echo "CACHE_EXPIRY_SECONDS=${{vars.CACHE_EXPIRY_SECONDS}}" >> \$REPO_DIR/.env
           EOF
 
       - name: Verify .env and docker-compose.yml files
