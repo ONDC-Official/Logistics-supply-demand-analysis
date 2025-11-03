@@ -11,6 +11,9 @@ import h3
 from config import Config
 from utils.database import get_db_collection, get_statistics, get_filters
 from utils.geojson_loader import load_pincode_geojson
+from utils.redis_cache import get_cache, set_cache
+from threading import Thread
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -52,6 +55,14 @@ def initialize_app():
             logger.info(f"Loaded {len(pincode_geojson['features'])} pincode boundaries.")
         else:
             logger.warning("Failed to load GeoJSON — file missing or unreadable.")
+        
+        logger.info("Warming cache for default filters (All, All)...")
+        Thread(target=lambda: get_hexagons_with_filters('All', 'All')).start()
+        Thread(target=lambda: get_supply_points_with_filters('All', 'All')).start()
+        Thread(target=lambda: get_statistics('All', 'All')).start()
+
+        logger.info("Initialization complete (cache warming started in background).")
+
 
         logger.info("Initialization complete")
 
@@ -65,6 +76,14 @@ def get_hexagons_with_filters(logistics_player='All', hour_bin='All', limit=None
     """
     if limit is None:
         limit = Config.DEFAULT_HEXAGON_LIMIT
+
+    cache_key = f"hexagons:{logistics_player}:{hour_bin}:{limit}"
+    cached = get_cache(cache_key)
+    if cached:
+        logger.info(f"✅ Cache hit for key: {cache_key}")
+        return cached
+    else:
+        logger.info(f"❌ Cache miss for key: {cache_key} — querying MongoDB")
     
     collection = get_db_collection()
     pipeline = []
@@ -78,6 +97,7 @@ def get_hexagons_with_filters(logistics_player='All', hour_bin='All', limit=None
     
     if match_conditions:
         pipeline.append({'$match': match_conditions})
+        logger.info(f"Applying match: {match_conditions}")
     
     # Stage 2: Group by H3 index with filtered metrics
     pipeline.extend([
@@ -159,17 +179,28 @@ def get_hexagons_with_filters(logistics_player='All', hour_bin='All', limit=None
                 }
             })
         except Exception as e:
+            logger.warning(f"Error processing hexagon: {e}")
             continue
     
-    return {
-        'type': 'FeatureCollection',
-        'features': features
-    }
+    geojson = {'type': 'FeatureCollection', 'features': features}
+    set_cache(cache_key, geojson, Config.CACHE_EXPIRY_SECONDS)
+    logger.info(f"Cached result for key: {cache_key}")
+
+    return geojson
+
 
 def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit=None):
     """Get supply points matching the current filters"""
     if limit is None:
         limit = Config.DEFAULT_SUPPLY_POINT_LIMIT
+
+    cache_key = f"supply_points:{logistics_player}:{hour_bin}:{limit}"
+    cached = get_cache(cache_key)
+    if cached:
+        logger.info(f"✅ Cache hit for key: {cache_key}")
+        return cached
+    else:
+        logger.info(f"❌ Cache miss for key: {cache_key} — querying MongoDB")
     
     collection = get_db_collection()
     pipeline = []
@@ -203,8 +234,12 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
     ])
     
     results = list(collection.aggregate(pipeline))
-    return [[r['lat'], r['lon']] for r in results]
+    supply_points = [[r['lat'], r['lon']] for r in results]
 
+    set_cache(cache_key, supply_points, Config.CACHE_EXPIRY_SECONDS)
+    logger.info(f"Cached result for key: {cache_key}")
+
+    return supply_points
 @app.context_processor
 def inject_base_vars():
     return dict(base_path=Config.BASE_PATH, base_url=Config.BASE_URL)
