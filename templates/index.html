@@ -1,18 +1,32 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Logistics Supply-Demand Visualization</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { position: absolute; top: 45px; bottom: 0; width: 100%; }
-        
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #map {
+            position: absolute;
+            top: 45px;
+            bottom: 0;
+            width: 100%;
+        }
+
         .top-filter-bar {
             position: fixed;
             top: 0;
@@ -27,19 +41,19 @@
             padding: 0 15px;
             gap: 15px;
         }
-        
+
         .filter-group {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
+
         .filter-label {
             color: #333;
             font-weight: 500;
             font-size: 13px;
         }
-        
+
         .filter-select {
             padding: 8px 12px;
             border: none;
@@ -48,23 +62,23 @@
             background: white;
             cursor: pointer;
             min-width: 150px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: all 0.3s;
         }
-        
+
         .filter-select:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        
+
         .gps-input {
             padding: 8px 12px;
             border: none;
             border-radius: 6px;
             font-size: 14px;
             width: 200px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .apply-btn {
             padding: 6px 16px;
             background: #e0e0e0;
@@ -76,17 +90,17 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        
+
         .apply-btn:hover {
             background: #d5d5d5;
         }
-        
+
         .apply-btn:disabled {
             background: #f0f0f0;
             color: #888;
             cursor: not-allowed;
         }
-        
+
         .loading {
             display: inline-block;
             width: 12px;
@@ -97,11 +111,13 @@
             animation: spin 0.6s linear infinite;
             margin-right: 5px;
         }
-        
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         .legend {
             position: fixed;
             bottom: 10px;
@@ -112,19 +128,19 @@
             font-size: 11px;
             padding: 5px;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .legend-title {
             font-weight: bold;
             font-size: 12px;
             margin-bottom: 5px;
         }
-        
+
         .legend p {
             margin: 5px 0;
         }
-        
+
         .status-message {
             position: fixed;
             top: 55px;
@@ -132,22 +148,23 @@
             background: white;
             padding: 12px 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 9999;
             display: none;
             font-size: 13px;
             max-width: 300px;
         }
-        
+
         .status-message.success {
             border-left: 4px solid #10b981;
         }
-        
+
         .status-message.error {
             border-left: 4px solid #ef4444;
         }
     </style>
 </head>
+
 <body>
     <div class="top-filter-bar">
         <div class="filter-group">
@@ -159,7 +176,7 @@
                 {% endfor %}
             </select>
         </div>
-        
+
         <div class="filter-group">
             <label class="filter-label">Filter by Hour Bin:</label>
             <select id="hour-bin-filter" class="filter-select">
@@ -169,49 +186,71 @@
                 {% endfor %}
             </select>
         </div>
-        
+
         <div class="filter-group">
             <label class="filter-label">Enter your GPS:</label>
-            <input type="text" id="gps-input" class="gps-input" placeholder="Lat, Lon">
+            <input type="text" id="gps-input" class="gps-input" placeholder="Lat, Lon" />
         </div>
-        
+
         <button id="apply-filter" class="apply-btn">Apply Filters</button>
     </div>
-    
+
     <div id="status-message" class="status-message"></div>
     <div id="map"></div>
-    
+
     <div class="legend">
         <p class="legend-title">🚚 Logistics Heatmap</p>
-        <p><strong>Total Orders:</strong> <span id="total-orders">{{ total_orders }}</span></p>
-        <p><strong>Total Restaurants:</strong> <span id="total-restaurants">{{ total_restaurants }}</span></p>
-        <p><strong>Success Rate:</strong> <span id="success-rate">{{ success_rate }}</span>%</p>
-        <p><strong>Active Hexagons:</strong> <span id="hexagon-count">{{ hexagon_count }}</span></p>
-        <hr style="margin: 10px 0; border: none; border-top: 1px solid #e5e7eb;">
-        <p style="font-weight: bold; margin-bottom: 5px;">Success Rate Colors:</p>
-        <p style="margin: 3px 0;"><span style="color: #1a9850;">█</span> 80-100% (Excellent)</p>
-        <p style="margin: 3px 0;"><span style="color: #91cf60;">█</span> 60-80% (Good)</p>
-        <p style="margin: 3px 0;"><span style="color: #fee090;">█</span> 40-60% (Fair)</p>
-        <p style="margin: 3px 0;"><span style="color: #fc8d59;">█</span> 20-40% (Poor)</p>
-        <p style="margin: 3px 0;"><span style="color: #d73027;">█</span> 0-20% (Critical)</p>
+        <p>
+            <strong>Total Orders:</strong>
+            <span id="total-orders">{{ total_orders }}</span>
+        </p>
+        <p>
+            <strong>Total Restaurants:</strong>
+            <span id="total-restaurants">{{ total_restaurants }}</span>
+        </p>
+        <p>
+            <strong>Success Rate:</strong>
+            <span id="success-rate">{{ success_rate }}</span>%
+        </p>
+        <p>
+            <strong>Active Hexagons:</strong>
+            <span id="hexagon-count">{{ hexagon_count }}</span>
+        </p>
+        <hr style="margin: 10px 0; border: none; border-top: 1px solid #e5e7eb" />
+        <p style="font-weight: bold; margin-bottom: 5px">Success Rate Colors:</p>
+        <p style="margin: 3px 0">
+            <span style="color: #1a9850">█</span> 80-100% (Excellent)
+        </p>
+        <p style="margin: 3px 0">
+            <span style="color: #91cf60">█</span> 60-80% (Good)
+        </p>
+        <p style="margin: 3px 0">
+            <span style="color: #fee090">█</span> 40-60% (Fair)
+        </p>
+        <p style="margin: 3px 0">
+            <span style="color: #fc8d59">█</span> 20-40% (Poor)
+        </p>
+        <p style="margin: 3px 0">
+            <span style="color: #d73027">█</span> 0-20% (Critical)
+        </p>
     </div>
-    
+
     <script>
         const BASE_URL = "{{ base_url }}";
         var map = L.map('map').setView([28.5355, 77.2200], 12);
-        
+
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
-        
+
         var pincodeLayer = null;
         var hexagonLayer = null;
         var markerClusterGroup = null;
         var gpsMarker = null;
         var layerControl = null;
-        
+
         // Add pincode boundaries
         var pincodeData = {{ pincode_data | tojson }};
         if (pincodeData && pincodeData.features && pincodeData.features.length > 0) {
@@ -223,7 +262,7 @@
                     fillOpacity: 0,
                     opacity: 0.4
                 },
-                onEachFeature: function(feature, layer) {
+                onEachFeature: function (feature, layer) {
                     if (feature.properties.Pincode) {
                         layer.bindTooltip(
                             '<b>Pincode:</b> ' + feature.properties.Pincode + '<br>' +
@@ -235,47 +274,47 @@
                 pane: 'tilePane'
             }).addTo(map);
         }
-        
+
         // Initial data
         renderHexagons({{ initial_hexagons | tojson }});
         renderSupplyPoints({{ initial_supply_points | tojson }});
-        
+
         // Initialize layer control ONCE
         function initLayerControl() {
             if (layerControl) {
                 map.removeControl(layerControl);
             }
-            
+
             var overlayMaps = {
                 "H3 Hexagons (Success Rate)": hexagonLayer,
                 "Supply Points (Restaurants)": markerClusterGroup
             };
-            
+
             if (pincodeLayer) {
                 overlayMaps["Pincode Boundaries"] = pincodeLayer;
             }
-            
+
             layerControl = L.control.layers({}, overlayMaps, {
                 collapsed: false,
                 position: 'topright'
             });
-            
+
             layerControl.addTo(map);
         }
-        
+
         initLayerControl();
-        
+
         // Filter functionality
         document.getElementById('apply-filter').addEventListener('click', applyFilter);
-        
+
         function applyFilter() {
             var btn = document.getElementById('apply-filter');
             var statusDiv = document.getElementById('status-message');
-            
+
             var logisticsPlayer = document.getElementById('logistics-player-filter').value;
             var hourBin = document.getElementById('hour-bin-filter').value;
             var gpsInput = document.getElementById('gps-input').value.trim();
-            
+
             // Handle GPS input
             if (gpsInput) {
                 var coords = gpsInput.split(',').map(c => parseFloat(c.trim()));
@@ -297,12 +336,12 @@
                     map.setView(coords, 14);
                 }
             }
-            
+
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Filtering...';
-            
+
             var startTime = performance.now();
-            
+
             // Make API call
             fetch(`${BASE_URL}/filter_hexagons`, {
                 method: 'POST',
@@ -314,62 +353,62 @@
                     hour_bin: hourBin
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                var endTime = performance.now();
-                var queryTime = Math.round(endTime - startTime);
-                
-                // Update layers (this will replace existing layers)
-                renderHexagons(data.hexagons);
-                renderSupplyPoints(data.supply_points);
-                
-                // Update statistics
-                document.getElementById('total-orders').textContent = data.stats.total_orders.toLocaleString();
-                document.getElementById('success-rate').textContent = data.stats.success_rate;
-                document.getElementById('total-restaurants').textContent = data.stats.total_restaurants.toLocaleString();
-                document.getElementById('hexagon-count').textContent = data.hexagons.features.length.toLocaleString();
-                
-                // Show status
-                statusDiv.className = 'status-message success';
-                statusDiv.style.display = 'block';
-                statusDiv.innerHTML = '✅ Showing ' + data.hexagons.features.length.toLocaleString() + ' hexagons<br>' +
-                                    'Orders: ' + data.stats.total_orders.toLocaleString() + ' | Success Rate: ' + data.stats.success_rate + '%<br>' +
-                                    'Query time: ' + queryTime + 'ms';
-                
-                setTimeout(() => {
-                    statusDiv.style.display = 'none';
-                }, 4000);
-                
-                // Reinitialize layer control to update references
-                initLayerControl();
-                
-                btn.disabled = false;
-                btn.innerHTML = 'Apply Filters';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                statusDiv.className = 'status-message error';
-                statusDiv.style.display = 'block';
-                statusDiv.innerHTML = '❌ Error applying filters';
-                
-                setTimeout(() => {
-                    statusDiv.style.display = 'none';
-                }, 3000);
-                
-                btn.disabled = false;
-                btn.innerHTML = 'Apply Filters';
-            });
+                .then(response => response.json())
+                .then(data => {
+                    var endTime = performance.now();
+                    var queryTime = Math.round(endTime - startTime);
+
+                    // Update layers (this will replace existing layers)
+                    renderHexagons(data.hexagons);
+                    renderSupplyPoints(data.supply_points);
+
+                    // Update statistics
+                    document.getElementById('total-orders').textContent = data.stats.total_orders.toLocaleString();
+                    document.getElementById('success-rate').textContent = data.stats.success_rate;
+                    document.getElementById('total-restaurants').textContent = data.stats.total_restaurants.toLocaleString();
+                    document.getElementById('hexagon-count').textContent = data.hexagons.features.length.toLocaleString();
+
+                    // Show status
+                    statusDiv.className = 'status-message success';
+                    statusDiv.style.display = 'block';
+                    statusDiv.innerHTML = '✅ Showing ' + data.hexagons.features.length.toLocaleString() + ' hexagons<br>' +
+                        'Orders: ' + data.stats.total_orders.toLocaleString() + ' | Success Rate: ' + data.stats.success_rate + '%<br>' +
+                        'Query time: ' + queryTime + 'ms';
+
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 4000);
+
+                    // Reinitialize layer control to update references
+                    initLayerControl();
+
+                    btn.disabled = false;
+                    btn.innerHTML = 'Apply Filters';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.className = 'status-message error';
+                    statusDiv.style.display = 'block';
+                    statusDiv.innerHTML = '❌ Error applying filters';
+
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 3000);
+
+                    btn.disabled = false;
+                    btn.innerHTML = 'Apply Filters';
+                });
         }
-        
+
         function renderHexagons(geojson) {
             // Remove existing hexagon layer
             if (hexagonLayer) {
                 map.removeLayer(hexagonLayer);
             }
-            
+
             // Create new hexagon layer
             hexagonLayer = L.geoJSON(geojson, {
-                style: function(feature) {
+                style: function (feature) {
                     return {
                         fillColor: getColor(feature.properties.success_rate),
                         color: '#333333',
@@ -378,7 +417,7 @@
                         opacity: 0.8
                     };
                 },
-                onEachFeature: function(feature, layer) {
+                onEachFeature: function (feature, layer) {
                     var props = feature.properties;
                     layer.bindTooltip(
                         '<b>H3 Index:</b> ' + props.h3_index + '<br>' +
@@ -393,39 +432,102 @@
                 pane: 'overlayPane'
             }).addTo(map);
         }
-        
+
+
         function renderSupplyPoints(points) {
-            // Remove existing supply points layer
             if (markerClusterGroup) {
                 map.removeLayer(markerClusterGroup);
             }
-            
-            // Create new marker cluster group
+
+            // Define pastel tone pairs inspired by MarkerCluster.Default.css
+            function getClusterShades(avgRate) {
+                if (avgRate >= 80) return ['rgba(181, 226, 140, 0.6)', 'rgba(110, 204, 57, 0.6)'];   // green
+                if (avgRate >= 60) return ['rgba(241, 230, 140, 0.6)', 'rgba(241, 211, 87, 0.6)'];   // yellow-green
+                if (avgRate >= 40) return ['rgba(253, 190, 115, 0.6)', 'rgba(241, 128, 23, 0.6)'];   // orange
+                if (avgRate >= 20) return ['rgba(250, 150, 130, 0.6)', 'rgba(230, 90, 40, 0.6)'];    // reddish-orange
+                return ['rgba(240, 130, 130, 0.6)', 'rgba(200, 60, 60, 0.6)'];                       // red
+            }
+
             markerClusterGroup = L.markerClusterGroup({
                 maxClusterRadius: 20,
                 spiderfyOnMaxZoom: true,
                 showCoverageOnHover: false,
-                zoomToBoundsOnClick: true
-            });
-            
-            // Add markers
-            points.forEach(function(point) {
-                var marker = L.circleMarker([point[0], point[1]], {
-                    radius: 3,
-                    color: '#27ae60',
-                    fillColor: '#2ecc71',
-                    fillOpacity: 0.7,
-                    weight: 1,
-                    pane: 'markerPane'
-                });
-                marker.bindPopup('Restaurant: ' + point[0].toFixed(6) + ', ' + point[1].toFixed(6));
-                markerClusterGroup.addLayer(marker);
-            });
-            
-            // Add to map
-            map.addLayer(markerClusterGroup);
-        }
-        
+                zoomToBoundsOnClick: true,
+
+                iconCreateFunction: function (cluster) {
+                    const markers = cluster.getAllChildMarkers();
+                    const rates = markers.map(m => m.options.success_rate || 0);
+                    const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+
+                    const [outerColor, innerColor] = getClusterShades(avgRate);
+                    const count = cluster.getChildCount();
+
+                    const size =
+                        avgRate >= 80 ? 50 :
+                        avgRate >= 50 ? 45 :
+                        avgRate >= 20 ? 40 : 35;
+
+                    return new L.DivIcon({
+                        html: `
+                            <div style="
+                                background-color:${outerColor};
+                                border-radius:50%;
+                                width:${size}px;
+                                height:${size}px;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                            ">
+                                <div style="
+                                    background-color:${innerColor};
+                                    border-radius:50%;
+                                    width:${size - 10}px;
+                                    height:${size - 10}px;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    color:white;
+                                    font-weight:bold;
+                                    font-size:12px;
+                                    text-shadow:0 1px 2px rgba(0,0,0,0.5);
+                                ">
+                                    ${count}
+                                </div>
+                            </div>
+                        `,
+                        className: 'marker-cluster-custom',
+                        iconSize: [size, size]
+                    });
+                }
+        });
+
+    // Add supply point markers
+    points.forEach(function (point) {
+        const [lat, lon, success_rate] = point;
+
+        const marker = L.circleMarker([lat, lon], {
+            radius: 1.8,
+            color: '#27ae60',
+            fillColor: '#2ecc71',
+            fillOpacity: 0.7,
+            weight: 0.6,
+            pane: 'markerPane',
+            success_rate
+        });
+
+        marker.bindPopup(
+            `Restaurant: ${lat.toFixed(6)}, ${lon.toFixed(6)}<br>Success Rate: ${success_rate.toFixed(1)}%`
+        );
+
+        markerClusterGroup.addLayer(marker);
+    });
+
+    map.addLayer(markerClusterGroup);
+}
+
+
+
         function getColor(success_rate) {
             if (success_rate >= 80) return '#1a9850';
             else if (success_rate >= 60) return '#91cf60';
@@ -435,4 +537,5 @@
         }
     </script>
 </body>
+
 </html>

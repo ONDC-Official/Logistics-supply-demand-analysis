@@ -220,6 +220,10 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
                 '_id': {
                     'lat': '$pickup_lat',
                     'lon': '$pickup_lon'
+                },
+                'total_orders': {'$sum': 1},
+                'successful_orders': {
+                    '$sum': {'$cond': [{'$eq': ['$order_status', 'success']}, 1, 0]}
                 }
             }
         },
@@ -228,13 +232,19 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
             '$project': {
                 '_id': 0,
                 'lat': '$_id.lat',
-                'lon': '$_id.lon'
+                'lon': '$_id.lon',
+                'success_rate': {
+                    '$multiply': [
+                        {'$divide': ['$successful_orders', '$total_orders']},
+                        100
+                    ]
+                }
             }
         }
     ])
     
     results = list(collection.aggregate(pipeline))
-    supply_points = [[r['lat'], r['lon']] for r in results]
+    supply_points = [[r['lat'], r['lon'], r.get('success_rate', 2)] for r in results]
 
     set_cache(cache_key, supply_points, Config.CACHE_EXPIRY_SECONDS)
     logger.info(f"Cached result for key: {cache_key}")
