@@ -10,7 +10,10 @@ jobs:
     steps:
       - name: clear redis from mobility server
         run: |
-          echo "Deploying with Docker Compose"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ./key.pem
+          chmod 600 ./key.pem
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
           docker restart redis-server
           
