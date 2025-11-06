@@ -145,8 +145,7 @@ def get_hexagons_with_filters(logistics_player='All', hour_bin='All', limit=None
                 'logistics_players': 1
             }
         },
-        {'$sort': {'total_orders': -1}},
-        {'$limit': limit}
+        {'$sort': {'total_orders': -1}}
     ])
     
     results = list(collection.aggregate(pipeline, allowDiskUse=True))
