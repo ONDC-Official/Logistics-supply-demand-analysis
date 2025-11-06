@@ -1,0 +1,18 @@
+name: clear-redis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clear-redis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: clear redis from mobility server
+        run: |
+          echo "Deploying with Docker Compose"
+          ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
+          docker restart redis-server
+          
+
+          EOF
