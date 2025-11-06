@@ -219,19 +219,20 @@
         <hr style="margin: 10px 0; border: none; border-top: 1px solid #e5e7eb" />
         <p style="font-weight: bold; margin-bottom: 5px">Success Rate Colors:</p>
         <p style="margin: 3px 0">
-            <span style="color: #1a9850">█</span> 80-100% (Excellent)
+            <span style="color: #1a9850">█</span> 91-100% (Excellent)
         </p>
         <p style="margin: 3px 0">
-            <span style="color: #91cf60">█</span> 60-80% (Good)
+            <span style="color: #91cf60">█</span> 80-90% (Good)
         </p>
         <p style="margin: 3px 0">
-            <span style="color: #fee090">█</span> 40-60% (Fair)
+            <span style="color: #fee090">█</span> 60-80% (Fair)
         </p>
         <p style="margin: 3px 0">
-            <span style="color: #fc8d59">█</span> 20-40% (Poor)
+            <span style="color: #fd9c6f">█</span> 40-60% (Poor)
         </p>
+        <p style="margin: 3px 0"><span style="color: #f26b6b">█</span> 20–40% (At Risk)</p>
         <p style="margin: 3px 0">
-            <span style="color: #d73027">█</span> 0-20% (Critical)
+            <span style="color: #db1a0f">█</span> 0-20% (Critical)
         </p>
     </div>
 
@@ -408,16 +409,19 @@
             if (hexagonClusterGroup) map.removeLayer(hexagonClusterGroup);
 
             function getClusterShades(success_rate) {
-                if (success_rate >= 80) 
-                    return ['rgba(30, 179, 95, 0.81)', 'rgba(1, 133, 71, 0.91)']; // deep green
+                
+                if (success_rate >= 91) 
+                    return ['rgba(30, 179, 95, 0.81)', 'rgba(1, 133, 71, 0.91)']; // 91–100% (Excellent) – Deep Green
+                else if (success_rate >= 80) 
+                    return ['rgba(145, 207, 96, 0.85)', 'rgba(102, 189, 99, 0.9)']; // 80–90% (Good) – Light Green
                 else if (success_rate >= 60) 
-                    return ['rgba(144, 207, 96, 0.8)', 'rgba(102, 189, 99, 0.8)']; // light green
+                    return ['rgba(255, 235, 170, 0.8)', 'rgba(254, 216, 120, 0.85)']; // 60–80% (Fair) – Yellow-Orange
                 else if (success_rate >= 40) 
-                    return ['rgba(254, 224, 139, 0.7)', 'rgba(253, 174, 97, 0.7)']; // yellow-orange
+                    return ['rgba(253, 172, 111, 0.8)', 'rgba(253, 140, 80, 0.85)'];
                 else if (success_rate >= 20) 
-                    return ['rgba(252, 141, 89, 0.7)', 'rgba(227, 74, 51, 0.7)'];  // orange-red
+                    return ['rgba(245, 130, 130, 0.75)', 'rgba(235, 105, 105, 0.85)'];   // 20–40% (At Risk) – Muted red
                 else 
-                    return ['rgba(254, 116, 119, 0.81)', 'rgba(182, 1, 44, 0.89)'];   // deep red
+                    return ['rgba(219, 26, 15, 0.8)', 'rgba(153, 0, 0, 0.9)'];        // 0–20% (Critical) – Deep Red
             }
 
 
@@ -466,6 +470,8 @@
                     const avgRate = totalOrders > 0 ? ((successOrders / totalOrders) * 100).toFixed(1) : 0;
                     const [outerColor, innerColor] = getClusterShades(avgRate);
                     const count = cluster.getChildCount();
+                    const supplyPoints = restaurants;
+
                     // Store aggregated tooltip text in cluster
                     cluster._tooltipContent = `
                         <b>Cluster of ${count} Hexagons</b><br>
@@ -505,7 +511,7 @@
                             font-size:12px;
                             text-shadow:0 1px 2px rgba(0,0,0,0.5);
                         ">
-                            ${count}
+                            ${supplyPoints.toLocaleString()}
                         </div>
                     </div>
                 `,
@@ -578,12 +584,14 @@
 
 
         function getColor(success_rate) {
-            if (success_rate >= 80) return '#1a9850';
-            else if (success_rate >= 60) return '#91cf60';
-            else if (success_rate >= 40) return '#fee090';
-            else if (success_rate >= 20) return '#fc8d59';
-            else return '#d73027';
+            if (success_rate >= 91) return '#1a9850';       // Excellent (91–100%)
+            else if (success_rate >= 80) return '#91cf60';  // Good (80–90%)
+            else if (success_rate >= 60) return '#fee090';  // Fair (60–79%)
+            else if (success_rate >= 40) return '#fd9c6f';  // Poor (40–59%)
+            else if (success_rate >= 20) return '#f26b6b';  // Light Red (20–39%)
+            else return '#db1a0f';                          // Critical (0–19%)
         }
+
     </script>
 </body>
 
