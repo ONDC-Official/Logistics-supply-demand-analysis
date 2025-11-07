@@ -3,7 +3,8 @@ name: logistics-deployment
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches:
+      - feat/supplyPoints
 
 jobs:
   deployment:
