@@ -226,7 +226,6 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
                 }
             }
         },
-        {'$limit': limit},
         {
             '$project': {
                 '_id': 0,

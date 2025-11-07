@@ -246,6 +246,9 @@
             maxZoom: 20
         }).addTo(map);
 
+        map.createPane('supplyPointsPane');
+        map.getPane('supplyPointsPane').style.zIndex = 450;
+
         var pincodeLayer = null;
         var hexagonLayer = null;
         var markerClusterGroup = null;
@@ -572,7 +575,7 @@
             fillColor: '#2ecc71',
             fillOpacity: 0.7,
             weight: 0.6,
-            pane: 'markerPane'
+            pane: 'supplyPointsPane'
         });
 
         marker.bindPopup(`Restaurant: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
