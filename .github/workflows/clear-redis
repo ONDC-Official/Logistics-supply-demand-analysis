@@ -12,7 +12,7 @@ jobs:
         run: |
           echo "Deploying with Docker Compose"
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
-          docker restart redis-server
+          docker restart redis-server_second
           
 
           EOF
