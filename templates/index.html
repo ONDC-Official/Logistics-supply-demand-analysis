@@ -251,7 +251,6 @@
         var markerClusterGroup = null;
         var gpsMarker = null;
         var layerControl = null;
-        var hexagonClusterGroup = null;
 
         // Add pincode boundaries
         var pincodeData = {{ pincode_data | tojson }};
@@ -289,7 +288,6 @@
 
             var overlayMaps = {
                 "H3 Hexagons (Success Rate)": hexagonLayer,
-                "Hexagon Clusters": hexagonClusterGroup,
                 "Supply Points (Restaurants)": markerClusterGroup
             };
 
@@ -406,24 +404,6 @@
         function renderHexagons(geojson) {
     // Remove existing hex layers if any
             if (hexagonLayer) map.removeLayer(hexagonLayer);
-            if (hexagonClusterGroup) map.removeLayer(hexagonClusterGroup);
-
-            function getClusterShades(success_rate) {
-                
-                if (success_rate >= 91) 
-                    return ['rgba(30, 179, 95, 0.81)', 'rgba(1, 133, 71, 0.91)']; // 91–100% (Excellent) – Deep Green
-                else if (success_rate >= 80) 
-                    return ['rgba(145, 207, 96, 0.85)', 'rgba(102, 189, 99, 0.9)']; // 80–90% (Good) – Light Green
-                else if (success_rate >= 60) 
-                    return ['rgba(255, 235, 170, 0.8)', 'rgba(254, 216, 120, 0.85)']; // 60–80% (Fair) – Yellow-Orange
-                else if (success_rate >= 40) 
-                    return ['rgba(253, 172, 111, 0.8)', 'rgba(253, 140, 80, 0.85)'];
-                else if (success_rate >= 20) 
-                    return ['rgba(245, 130, 130, 0.75)', 'rgba(235, 105, 105, 0.85)'];   // 20–40% (At Risk) – Muted red
-                else 
-                    return ['rgba(219, 26, 15, 0.8)', 'rgba(153, 0, 0, 0.9)'];        // 0–20% (Critical) – Deep Red
-            }
-
 
             // Create a normal GeoJSON layer (used in layer control)
             hexagonLayer = L.geoJSON(geojson, {
@@ -449,136 +429,134 @@
                     );
                 },
                 pane: 'overlayPane'
-            });
-
-            // --- Add clustering for hexagons ---
-            hexagonClusterGroup = L.markerClusterGroup({
-                maxClusterRadius: 60,
-                iconCreateFunction: function (cluster) {
-                    const markers = cluster.getAllChildMarkers();
-
-                    let totalOrders = 0, successOrders = 0, failOrders = 0, restaurants = 0;
-
-                    markers.forEach(m => {
-                        const p = m.featureProps;
-                        totalOrders += p.total_orders || 0;
-                        successOrders += p.success_orders || 0;
-                        failOrders += p.fail_orders || 0;
-                        restaurants += p.unique_restaurants || 0;
-                    });
-
-                    const avgRate = totalOrders > 0 ? ((successOrders / totalOrders) * 100).toFixed(1) : 0;
-                    const [outerColor, innerColor] = getClusterShades(avgRate);
-                    const count = cluster.getChildCount();
-                    const supplyPoints = restaurants;
-
-                    // Store aggregated tooltip text in cluster
-                    cluster._tooltipContent = `
-                        <b>Cluster of ${count} Hexagons</b><br>
-                        <b>Total Orders:</b> ${totalOrders.toLocaleString()}<br>
-                        <b>Success:</b> ${successOrders.toLocaleString()}<br>
-                        <b>Failed:</b> ${failOrders.toLocaleString()}<br>
-                        <b>Avg Success Rate:</b> ${avgRate}%<br>
-                        <b>Restaurants:</b> ${restaurants.toLocaleString()}
-                    `;
-
-                    const size =
-                        avgRate >= 80 ? 50 :
-                        avgRate >= 50 ? 45 :
-                        avgRate >= 20 ? 40 : 35;
-                    return new L.DivIcon({
-                        html: `
-                    <div style="
-                        background-color:${outerColor};
-                        border-radius:50%;
-                        width:${size}px;
-                        height:${size}px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        box-shadow: 0 0 4px rgba(0,0,0,0.3);
-                    ">
-                        <div style="
-                            background-color:${innerColor};
-                            border-radius:50%;
-                            width:${size - 10}px;
-                            height:${size - 10}px;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            color:white;
-                            font-weight:bold;
-                            font-size:12px;
-                            text-shadow:0 1px 2px rgba(0,0,0,0.5);
-                        ">
-                            ${supplyPoints.toLocaleString()}
-                        </div>
-                    </div>
-                `,
-                        className: 'hex-cluster-icon',
-                        iconSize: [40, 40]
-                    });
-                }
-            });
-
-            hexagonClusterGroup.on('clustermouseover', function (e) {
-                const cluster = e.layer;
-                if (cluster._tooltipContent) {
-                    cluster.bindTooltip(cluster._tooltipContent, {
-                        className: 'custom-tooltip',
-                        direction: 'top'
-                    }).openTooltip();
-                }
-            });
-
-            // Convert each hex polygon into a layer to add into cluster group
-            hexagonLayer.eachLayer(layer => {
-                const props = layer.feature.properties;
-                const center = layer.getBounds().getCenter();
-                const rate = layer.feature.properties.success_rate;
-
-                const marker = L.circleMarker(center, {
-                    radius: 0.001, // invisible small marker
-                    opacity: 0,
-                    fillOpacity: 0,
-                    success_rate: rate
-                });
-                marker.featureProps = props;
-                marker.bindTooltip(layer.getTooltip());
-                hexagonClusterGroup.addLayer(marker);
-            });
-
-            // Add both the polygon outlines and their clustered centroids
-            hexagonLayer.addTo(map);
-            hexagonClusterGroup.addTo(map);
+            }).addTo(map);
         }
-
 
 
         function renderSupplyPoints(points) {
             if (markerClusterGroup) {
                 map.removeLayer(markerClusterGroup);
             }
+            let activeClusterTooltip = null;
 
-            markerClusterGroup = L.layerGroup();
+            markerClusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 20,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+
+                iconCreateFunction: function (cluster) {
+                    const markers = cluster.getAllChildMarkers();
+                    const rates = markers.map(m => m.options.success_rate || 0);
+                    const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+
+                    const [outerColor, innerColor] = getClusterShades(avgRate);
+                    const count = cluster.getChildCount();
+
+                    const size =
+                        avgRate >= 80 ? 50 :
+                        avgRate >= 50 ? 45 :
+                        avgRate >= 20 ? 40 : 35;
+
+                    return new L.DivIcon({
+                        html: `
+                            <div style="
+                                background-color:${outerColor};
+                                border-radius:50%;
+                                width:${size}px;
+                                height:${size}px;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                            ">
+                                <div style="
+                                    background-color:${innerColor};
+                                    border-radius:50%;
+                                    width:${size - 10}px;
+                                    height:${size - 10}px;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    color:white;
+                                    font-weight:bold;
+                                    font-size:12px;
+                                    text-shadow:0 1px 2px rgba(0,0,0,0.5);
+                                ">
+                                    ${count}
+                                </div>
+                            </div>
+                        `,
+                        className: 'marker-cluster-custom',
+                        iconSize: [size, size]
+                    });
+                }
+            });
 
     // Add supply point markers
-    points.forEach(function (point) {
-        const [lat, lon] = point;
+    points.forEach(function (p) {
+        const lat = p.lat;
+        const lon = p.lon;
+        const rate = p.success_rate || 0;
 
         const marker = L.circleMarker([lat, lon], {
-            radius: 1.8,
+            radius: 2,
             color: '#27ae60',
             fillColor: '#2ecc71',
             fillOpacity: 0.7,
             weight: 0.6,
-            pane: 'markerPane'
+            pane: 'markerPane',
+            success_rate: rate,
+            total_orders: p.total_orders || 0,
+            success_orders: p.success_orders || 0,
+            fail_orders: p.fail_orders || 0
         });
 
-        marker.bindPopup(`Restaurant: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
-        marker.addTo(markerClusterGroup);
+        // Minimal info on popup (for individual markers)
+        marker.bindPopup(
+            `Restaurant: ${lat.toFixed(6)}, ${lon.toFixed(6)}<br>Success Rate: ${rate.toFixed(1)}%`
+        );
+
+        markerClusterGroup.addLayer(marker);
     });
-    markerClusterGroup.addTo(map);
+
+    markerClusterGroup.on('clustermouseover', function (e) {
+        if (activeClusterTooltip) {
+            map.removeLayer(activeClusterTooltip);
+            activeClusterTooltip = null;
+        }
+        const markers = e.layer.getAllChildMarkers();
+        const totalOrders = markers.reduce((sum, m) => sum + (m.options.total_orders || 0), 0);
+        const successOrders = markers.reduce((sum, m) => sum + (m.options.success_orders || 0), 0);
+        const failOrders = markers.reduce((sum, m) => sum + (m.options.fail_orders || 0), 0);
+        const avgRate = successOrders / (totalOrders || 1) * 100;
+
+        const tooltipContent = `
+            <b>Total Orders:</b> ${totalOrders.toLocaleString()}<br>
+            <b>Success:</b> ${successOrders.toLocaleString()}<br>
+            <b>Failed:</b> ${failOrders.toLocaleString()}<br>
+            <b>Success Rate:</b> ${avgRate.toFixed(2)}%
+        `;
+
+        const clusterCenter = e.layer.getLatLng();
+        activeClusterTooltip = L.tooltip({
+            permanent: false,
+            direction: 'top',
+            className: 'custom-tooltip'
+        })
+            .setContent(tooltipContent)
+            .setLatLng(clusterCenter)
+            .addTo(map);
+
+        markerClusterGroup.on('clustermouseout', function () {
+        if (activeClusterTooltip) {
+            map.removeLayer(activeClusterTooltip);
+            activeClusterTooltip = null;
+        }
+    });
+    });
+
+    map.addLayer(markerClusterGroup);
 }
 
 
@@ -590,6 +568,21 @@
             else if (success_rate >= 40) return '#fd9c6f';  // Poor (40–59%)
             else if (success_rate >= 20) return '#f26b6b';  // Light Red (20–39%)
             else return '#db1a0f';                          // Critical (0–19%)
+        }
+
+        function getClusterShades(success_rate) {
+            if (success_rate >= 91) 
+                return ['rgba(30, 179, 95, 0.81)', 'rgba(1, 133, 71, 0.91)']; // 91–100% (Excellent) – Deep Green
+            else if (success_rate >= 80) 
+                return ['rgba(145, 207, 96, 0.85)', 'rgba(102, 189, 99, 0.9)']; // 80–90% (Good) – Light Green
+            else if (success_rate >= 60) 
+                return ['rgba(255, 235, 170, 0.8)', 'rgba(254, 216, 120, 0.85)']; // 60–80% (Fair) – Yellow-Orange
+            else if (success_rate >= 40) 
+                return ['rgba(253, 172, 111, 0.8)', 'rgba(253, 140, 80, 0.85)'];
+            else if (success_rate >= 20) 
+                return ['rgba(245, 130, 130, 0.75)', 'rgba(235, 105, 105, 0.85)'];   // 20–40% (At Risk) – Muted red
+            else 
+                return ['rgba(219, 26, 15, 0.8)', 'rgba(153, 0, 0, 0.9)'];        // 0–20% (Critical) – Deep Red
         }
 
     </script>

@@ -223,27 +223,51 @@ def get_supply_points_with_filters(logistics_player='All', hour_bin='All', limit
                 'total_orders': {'$sum': 1},
                 'successful_orders': {
                     '$sum': {'$cond': [{'$eq': ['$order_status', 'success']}, 1, 0]}
-                }
+                },
+                 'failed_orders': {
+                    '$sum': {'$cond': [{'$ne': ['$order_status', 'success']}, 1, 0]}
+                },
+                'hour_bins': {'$addToSet': '$hour_bin'},
+                'logistics_players': {'$addToSet': '$logistics_player'}
             }
         },
-        {'$limit': limit},
         {
             '$project': {
                 '_id': 0,
                 'lat': '$_id.lat',
                 'lon': '$_id.lon',
+                'total_orders': 1,
+                'successful_orders': 1,
+                'failed_orders': 1,
                 'success_rate': {
                     '$multiply': [
                         {'$divide': ['$successful_orders', '$total_orders']},
                         100
                     ]
-                }
+                },
+                'hour_bins': 1,
+                'logistics_players': 1
             }
         }
     ])
     
     results = list(collection.aggregate(pipeline))
-    supply_points = [[r['lat'], r['lon'], r.get('success_rate', 2)] for r in results]
+    supply_points = []
+    for r in results:
+        try:
+            supply_points.append({
+                'lat': round(r['lat'], 6),
+                'lon': round(r['lon'], 6),
+                'total_orders': r['total_orders'],
+                'success_orders': r['successful_orders'],
+                'fail_orders': r['failed_orders'],
+                'success_rate': round(r['success_rate'], 2),
+                'hour_bins': ','.join(sorted(r.get('hour_bins', []))),
+                'logistics_players': ','.join([str(p).split('/')[-1] for p in r.get('logistics_players', [])])
+            })
+        except Exception as e:
+            logger.warning(f"Error processing supply point: {e}")
+            continue
 
     set_cache(cache_key, supply_points, Config.CACHE_EXPIRY_SECONDS)
     logger.info(f"Cached result for key: {cache_key}")
